@@ -1,0 +1,38 @@
+﻿@page "/"
+@using LiveSqlDataApp.Data;
+@using LiveSqlDataApp.Services;
+@using Microsoft.AspNetCore.SignalR.Client;
+
+<PageTitle>Index</PageTitle>
+
+@inject EmployeeService service
+@inject NavigationManager navigat
+
+@foreach(var e in eList)
+{
+    <p>@e.Name | @e.Title</p>
+}
+
+
+@code{
+
+    List<Employee> eList = new List<Employee>();
+    private HubConnection hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        eList = await service.GetAllEmployee();
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(navigat.ToAbsoluteUri("/employeehub"))
+        .Build();
+
+        hubConnection.On<List<Employee>>("RefreshEmployees", emp =>
+        {
+            eList = emp;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+}
